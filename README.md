@@ -75,3 +75,10 @@ This program simulates a control system that reads a sensor value from an input 
 ```bash
   ./task4
 ```
+## Answer To Last question
+The program determines which action to take based on the "sensor" input by using conditional logic and simulated memory manipulation. The sensor value, stored in a designated memory location (`sensor_value`), is read into a register. If the input is in ASCII format (e.g., `'0'` for 0, `'1'` for 1), it is converted to its numerical equivalent by subtracting the ASCII value of `'0'`. The program then compares this value against predefined conditions using the `cmp` instruction. Based on the results, conditional jumps (`je` for "jump if equal") redirect execution to the appropriate code block.
+
+For instance, if the sensor value is `3`, the program jumps to the `trigger_alarm` section, setting the `alarm_status` variable to `1` to indicate the alarm is triggered. If the sensor value is `2`, it jumps to `stop_motor`, updating the `motor_status` variable to `0` to turn the motor off. Similarly, if the sensor value is `1`, the program jumps to `start_motor` and sets `motor_status` to `1` to turn the motor on. If the value is `0` or any unrecognized value, the motor remains off by default.
+
+The program uses memory variables such as `motor_status` and `alarm_status` to simulate hardware port control. These variables act as flags to indicate the current state of the motor and alarm. In a real hardware scenario, this logic could be extended to manipulate I/O ports directly using `IN` and `OUT` instructions. This approach ensures efficient and clear control of the simulated system, demonstrating basic principles of embedded systems programming in assembly.
+
