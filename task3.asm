@@ -1,82 +1,106 @@
 section .data
-    prompt db "Enter a number: ", 0        ; Prompt message
-    result_msg db "Factorial is: ", 0       ; Result message
+    prompt db "Enter a number (0-9): ", 0
+    result_msg db "Factorial is: ", 0
+    newline db 10
 
 section .bss
-    num resd 1                              ; Reserve space for the input number
-    result resd 1                           ; Reserve space for the result
+    input resb 10
+    result resd 1
 
 section .text
     global _start
 
 _start:
-    ; Print the prompt
-    mov eax, 4            ; sys_write system call
-    mov ebx, 1            ; File descriptor (stdout)
-    mov ecx, prompt       ; Address of the prompt message
-    mov edx, 17           ; Length of the prompt
+    ; Prompt
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, prompt
+    mov edx, 21
     int 0x80
 
-    ; Read user input
-    mov eax, 3            ; sys_read system call
-    mov ebx, 0            ; File descriptor (stdin)
-    mov ecx, num          ; Address of the input buffer
-    mov edx, 4            ; Number of bytes to read
+    ; Read input
+    mov eax, 3
+    mov ebx, 0
+    mov ecx, input
+    mov edx, 5
     int 0x80
 
-    ; Convert ASCII input to integer
-    mov eax, [num]        ; Load input value into EAX
-    sub eax, '0'          ; Convert ASCII to integer
+    ; Convert input to number
+    movzx eax, byte [input]
+    sub eax, '0'
 
-    ; Call factorial subroutine
-    push eax              ; Push input number onto the stack
-    call factorial        ; Call the factorial subroutine
-    pop ebx               ; Restore the original number
-
-    ; Store result in memory
-    mov [result], eax     ; Store the result in 'result'
+    ; Calculate factorial
+    mov ebx, eax
+    call factorial
 
     ; Print result message
-    mov eax, 4            ; sys_write system call
-    mov ebx, 1            ; File descriptor (stdout)
-    mov ecx, result_msg   ; Address of the result message
-    mov edx, 12           ; Length of the result message
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, result_msg
+    mov edx, 14
     int 0x80
 
-    ; Print the result (not fully implemented in this example)
-    ; You would need additional code to convert the result back to ASCII and display it
+    ; Print factorial
+    mov eax, [result]
+    call print_number
 
-    ; Exit the program
-    mov eax, 1            ; sys_exit system call
-    xor ebx, ebx          ; Exit code 0
+    ; Exit
+    mov eax, 1
+    xor ebx, ebx
     int 0x80
 
-; Factorial subroutine (recursively calculates factorial)
+; Factorial calculation
 factorial:
-    push ebp              ; Save the base pointer
-    mov ebp, esp          ; Set up stack frame
+    ; Start with 1 in result
+    mov dword [result], 1
+    
+    ; Skip if input is 0 or 1
+    cmp ebx, 1
+    jle factorial_done
 
-    ; Base case: if n <= 1, return 1
-    cmp eax, 1
-    jle base_case         ; Jump to base case if n <= 1
+factorial_loop:
+    ; Multiply current result by current number
+    mov eax, [result]
+    mul ebx
+    mov [result], eax
+    
+    ; Decrement and continue if > 1
+    dec ebx
+    cmp ebx, 1
+    jg factorial_loop
 
-    ; Recursive case: n * factorial(n-1)
-    push eax              ; Save the current value of n
-    dec eax               ; Decrement n
-    call factorial        ; Recursive call
-    pop ebx               ; Restore the original value of n
+factorial_done:
+    ret
 
-    ; Multiply the result by n
-    mul ebx               ; EAX = EAX * EBX (current result * n)
+; Print number routine
+print_number:
+    ; Prepare buffer for digit conversion
+    mov ecx, 10
+    mov edi, input + 9  ; End of buffer
+    mov byte [edi], 0   ; Null terminator
 
-    ; Restore stack and return
-    mov esp, ebp          ; Restore stack pointer
-    pop ebp               ; Restore base pointer
-    ret                   ; Return from subroutine
+convert_loop:
+    xor edx, edx
+    div ecx
+    add dl, '0'
+    dec edi
+    mov byte [edi], dl
+    test eax, eax
+    jnz convert_loop
 
-base_case:
-    mov eax, 1            ; Return 1 in the base case
-    mov esp, ebp          ; Restore stack pointer
-    pop ebp               ; Restore base pointer
-    ret                   ; Return from subroutine
+    ; Print converted number
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, edi
+    mov edx, input + 9
+    sub edx, edi
+    int 0x80
 
+    ; Print newline
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, newline
+    mov edx, 1
+    int 0x80
+
+    ret
